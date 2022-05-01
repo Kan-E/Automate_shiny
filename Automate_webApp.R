@@ -202,16 +202,6 @@ server <- function(input, output) {
     }
   })
 
-  r <- reactive({
-    tmp <- inFile()
-    if (is.null(tmp)) {
-      return(NULL)
-    } else {
-      res <- ana_cor(tmp)
-      return(res)
-    }
-  })
-
   output$outFile <- DT::renderDataTable({
     inFile()
   }, extensions = c('Buttons'), options = list(dom = 'Blfrtip', buttons = c('csv', 'excel', 'pdf'))
