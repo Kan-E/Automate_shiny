@@ -12,7 +12,6 @@ The replication number is represented by the underbar. Do not use it for anythin
 <img width="890" alt="format example" src="https://user-images.githubusercontent.com/77435195/148402453-e87ce92e-fcf1-4d45-af72-e9d256366bfa.png">
 
 # Output example
-![example](https://user-images.githubusercontent.com/77435195/148407981-75873d95-eb04-458c-9a99-db769d7efa3f.png)
 Error plot (TukeyHSD)
 ![example_TukeyHSD](https://user-images.githubusercontent.com/77435195/148402886-16a48e4c-8962-4066-95bc-a6d26e7fada9.png)
 Statical analysis (TukeyHSD)
