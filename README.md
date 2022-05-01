@@ -1,6 +1,6 @@
 # Automate_shiny
 
-`Automate_shiny` is an web app (https://kan-e.shinyapps.io/Automate_shiny/) for automated data visualization from count matrix files.<br>
+`Automate_shiny` is an RShiny web apps (https://kan-e.shinyapps.io/Automate_shiny/) for automated data visualization from count matrix files.<br>
 It has simplified functions for the creation of a standard graph. <br>
 The condition number is automatically recognized from the count matrix file and then the statical analysis is performed. <br>
 In the case of just 2 conditions (pairwise comparison), Welch's t-test is performed. In the case of more than 3 conditions (multiple comparisons), the Tukey HSD test and Dunnett's test are performed.<br>
