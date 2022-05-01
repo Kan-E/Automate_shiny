@@ -10,13 +10,13 @@ library(ggpubr)
 
 # User interface ----
 ui <- fluidPage(
-  titlePanel("Simple standard statics"),
+  titlePanel("Automate"),
 
   sidebarLayout(
     sidebarPanel(
       fileInput(
         "file",
-        label = "File input",
+        label = "Select a count matrix file (txt, csv, or xlsx) for input",
         accept = c("xlsx", "txt", "csv"),
         multiple = FALSE,
         width = "80%")
@@ -35,7 +35,38 @@ ui <- fluidPage(
           )
         ),
         tabPanel("Tukey-HSD or Welch_t-test", dataTableOutput("outStat1")),
-        tabPanel("Dunnett", dataTableOutput("outStat2"))
+        tabPanel("Dunnett", dataTableOutput("outStat2")),
+        tabPanel("About",
+                 "# Automate_shiny", br(),
+                 "`Automate_shiny` is an RShiny web apps (https://kan-e.shinyapps.io/Automate_shiny/) for automated data visualization from count matrix files.", br(),
+                 "It has simplified functions for the creation of a basic graph.", br(),
+                 "The condition number is automatically recognized from the count matrix file and then the statical analysis is performed.", br(),
+                 "In the case of just 2 conditions (pairwise comparison), Welch's t-test is performed. In the case of more than 3 conditions (multiple comparisons), the Tukey HSD test and Dunnett's test are performed.", br(),
+                 br(),
+                 "# Input file format", br(),
+                 "Input file format must be excel file format (.xlsx), tab-separated text file format (.txt), or CSV file format (.csv).", br(),
+                 "A1 cell in the excel sheet must be __Row.names__.", br(),
+                 "The replication number is represented by the underbar. Do not use it for anything else.", br(),
+                 img(src="format example.png", height = 384, width = 890), br(),
+                 br(),
+                 "# Output example", br(),
+                 "Errorplot (TukeyHSD)", br(),
+                 img(src="example autoerror tukeyHSD.png", height = 700, width = 700), br(),
+                 "Statical analysis", br(),
+                 img(src="example result of tukeyHS.png", height = 500, width = 800), br(),
+                 br(),
+                 "# Reference", br(),
+                 "H. Wickham. ggplot2: Elegant Graphics for Data Analysis. Springer-Verlag New York, 2016.", br(),
+                 "Alboukadel Kassambara (2020). ggpubr: 'ggplot2' Based Publication Ready Plots. R package version 0.4.0. https://CRAN.R-project.org/package=ggpubr", br(),
+                 "Hadley Wickham, Romain François, Lionel Henry and Kirill Müller (2021). dplyr: A Grammar of Data Manipulation. R package version 1.0.7. https://CRAN.R-project.org/package=dplyr", br(),
+                 "Hadley Wickham (2021). tidyr: Tidy Messy Data. R package version 1.1.3. https://CRAN.R-project.org/package=tidyr", br(),
+                 "Alboukadel Kassambara (2021). rstatix: Pipe-Friendly Framework for Basic Statistical Tests. R package version 0.7.0. https://CRAN.R-project.org/package=rstatix", br(),
+                 "Torsten Hothorn, Frank Bretz and Peter Westfall (2008). Simultaneous Inference in General Parametric Models. Biometrical Journal 50(3), 346--363.", br(),
+                 "Winston Chang, Joe Cheng, JJ Allaire, Carson Sievert, Barret Schloerke, Yihui Xie, Jeff Allen, Jonathan McPherson, Alan Dipert and Barbara Borges (2021). shiny: Web Application Framework for R. R package version 1.7.1. https://CRAN.R-project.org/package=shiny", br(),
+                 br(),
+                 "https://github.com/Kan-E/Automate_shiny", br(),
+                 "Author: Kan Etoh kaneto@kumamoto-u.ac.jp",
+                 br(), "2022 April")
       )
     )
   )
