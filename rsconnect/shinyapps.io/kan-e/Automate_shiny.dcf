@@ -1,14 +1,14 @@
 name: Automate_shiny
-title: Automate_shiny
+title:
 username:
 account: kan-e
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 6208750
-bundleId: 5864054
+bundleId: 5864430
 url: https://kan-e.shinyapps.io/Automate_shiny/
-when: 1651576992.25601
-lastSyncTime: 1651576992.25603
+when: 1651583897.25585
+lastSyncTime: 1651583897.25586
 asMultiple: FALSE
 asStatic: FALSE
 ignoredFiles: LICENSE|README.md

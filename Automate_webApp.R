@@ -10,16 +10,24 @@ library(ggpubr)
 
 # User interface ----
 ui <- fluidPage(
+  tags$head(includeHTML(("google-analytics.html"))),
   titlePanel("Automate"),
 
   sidebarLayout(
     sidebarPanel(
-      fileInput(
-        "file",
-        label = "Select a count matrix file (txt, csv, or xlsx) for input",
-        accept = c("xlsx", "txt", "csv"),
-        multiple = FALSE,
-        width = "80%")
+      radioButtons('data_file_type','Use example file or upload your own data',
+                   c('Upload Data'="upload",
+                     'Example Data'="examplecounts"
+                   ),selected = "examplecounts"),
+
+      conditionalPanel(condition="input.data_file_type=='upload'",
+                       fileInput(
+                         "file",
+                         label = "Select a count matrix file (txt, csv, or xlsx) for input",
+                         accept = c("xlsx", "txt", "csv"),
+                         multiple = FALSE,
+                         width = "80%")
+                       ),
     ),
 
     mainPanel(
@@ -37,25 +45,25 @@ ui <- fluidPage(
         tabPanel("Tukey-HSD or Welch_t-test", dataTableOutput("outStat1")),
         tabPanel("Dunnett", dataTableOutput("outStat2")),
         tabPanel("About",
-                 "# Automate_shiny", br(),
-                 "`Automate_shiny` is an RShiny web apps (https://kan-e.shinyapps.io/Automate_shiny/) for automated data visualization from count matrix files.", br(),
+                 strong("Automate_shiny"), br(),
+                 "`Automate_shiny` is an RShiny web apps", a("(https://kan-e.shinyapps.io/Automate_shiny/)", href = "https://kan-e.shinyapps.io/Automate_shiny/"), "for automated data visualization from count matrix files.", br(),
                  "It has simplified functions for the creation of a basic graph.", br(),
                  "The condition number is automatically recognized from the count matrix file and then the statical analysis is performed.", br(),
                  "In the case of just 2 conditions (pairwise comparison), Welch's t-test is performed. In the case of more than 3 conditions (multiple comparisons), the Tukey HSD test and Dunnett's test are performed.", br(),
                  br(),
-                 "# Input file format", br(),
+                 strong("Input file format"), br(),
                  "Input file format must be excel file format (.xlsx), tab-separated text file format (.txt), or CSV file format (.csv).", br(),
                  "A1 cell in the excel sheet must be __Row.names__.", br(),
                  "The replication number is represented by the underbar. Do not use it for anything else.", br(),
                  img(src="format example.png", height = 384, width = 890), br(),
                  br(),
-                 "# Output example", br(),
+                 strong("Output example"), br(),
                  "Errorplot (TukeyHSD)", br(),
                  img(src="example autoerror tukeyHSD.png", height = 700, width = 700), br(),
                  "Statical analysis", br(),
                  img(src="example result of tukeyHS.png", height = 500, width = 800), br(),
                  br(),
-                 "# Reference", br(),
+                 strong("Reference"), br(),
                  "H. Wickham. ggplot2: Elegant Graphics for Data Analysis. Springer-Verlag New York, 2016.", br(),
                  "Alboukadel Kassambara (2020). ggpubr: 'ggplot2' Based Publication Ready Plots. R package version 0.4.0. https://CRAN.R-project.org/package=ggpubr", br(),
                  "Hadley Wickham, Romain François, Lionel Henry and Kirill Müller (2021). dplyr: A Grammar of Data Manipulation. R package version 1.0.7. https://CRAN.R-project.org/package=dplyr", br(),
@@ -64,9 +72,13 @@ ui <- fluidPage(
                  "Torsten Hothorn, Frank Bretz and Peter Westfall (2008). Simultaneous Inference in General Parametric Models. Biometrical Journal 50(3), 346--363.", br(),
                  "Winston Chang, Joe Cheng, JJ Allaire, Carson Sievert, Barret Schloerke, Yihui Xie, Jeff Allen, Jonathan McPherson, Alan Dipert and Barbara Borges (2021). shiny: Web Application Framework for R. R package version 1.7.1. https://CRAN.R-project.org/package=shiny", br(),
                  br(),
-                 "https://github.com/Kan-E/Automate_shiny", br(),
-                 "Author: Kan Etoh kaneto@kumamoto-u.ac.jp",
-                 br(), "2022 April")
+                 strong("Author: Kan Etoh kaneto@kumamoto-u.ac.jp"), br(),
+                 "Source code:", a("https://github.com/Kan-E/Automate_shiny", href = "https://github.com/Kan-E/Automate_shiny"), br(),
+                 "2022 April"),
+        footer=p(hr(),p("ShinyApp created by Kan Etoh",align="center",width=4),
+                 p(("Copyright (C) 2022, code licensed under MIT"),align="center",width=4),
+                 p(("Code available on Github:"),a("https://github.com/Kan-E/Automate_shiny",href="https://github.com/Kan-E/Automate_shiny"),align="center",width=4)
+        )
       )
     )
   )
@@ -76,6 +88,10 @@ ui <- fluidPage(
 server <- function(input, output) {
 
   inFile <- reactive({
+    if(input$data_file_type=="examplecounts") {
+      tmp <- read.xls("data/example.xlsx", header = TRUE)
+      return(tmp)
+    }else{
     tmp <- input$file
     if (is.null(tmp)){
       return(NULL)
@@ -85,7 +101,7 @@ server <- function(input, output) {
       if(tools::file_ext(tmp$datapath) == "txt") df <- fread(tmp$datapath, header=TRUE, sep = "\t")
       return(df)
     }
-  })
+  }})
 
   inFile2 <- reactive({
     tmp <- inFile()
