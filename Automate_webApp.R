@@ -12,22 +12,23 @@ library(ggpubr)
 ui <- fluidPage(
   tags$head(includeHTML(("google-analytics.html"))),
   titlePanel("Automate"),
-
   sidebarLayout(
     sidebarPanel(
-      radioButtons('data_file_type','Use example file or upload your own data',
-                   c('Upload Data'="upload",
-                     'Example Data'="examplecounts"
-                   ),selected = "examplecounts"),
-
-      conditionalPanel(condition="input.data_file_type=='upload'",
-                       fileInput(
-                         "file",
-                         label = "Select a count matrix file (txt, csv, or xlsx) for input",
-                         accept = c("xlsx", "txt", "csv"),
-                         multiple = FALSE,
-                         width = "80%")
-                       ),
+      fileInput("file",
+        label = "Select a count matrix file (txt, csv, or xlsx) for input",
+        accept = c("xlsx", "txt", "csv"),
+        multiple = FALSE,
+        width = "80%"),
+      actionButton("goButton", "example data"),
+      tags$head(tags$style("#goButton{color: black;
+                                 font-size: 12px;
+                                 font-style: italic;
+                                 }"),
+                tags$style("
+          body {
+            padding: 0 !important;
+          }"
+                ))
     ),
 
     mainPanel(
@@ -88,20 +89,14 @@ ui <- fluidPage(
 server <- function(input, output) {
 
   inFile <- reactive({
-    if(input$data_file_type=="examplecounts") {
-      tmp <- read.xls("data/example.xlsx", header = TRUE)
-      return(tmp)
-    }else{
-    tmp <- input$file
-    if (is.null(tmp)){
-      return(NULL)
-    } else {
-      if(tools::file_ext(tmp$datapath) == "xlsx") df <- read.xls(tmp$datapath, header=TRUE)
-      if(tools::file_ext(tmp$datapath) == "csv") df <- fread(tmp$datapath, header=TRUE, sep = ",")
-      if(tools::file_ext(tmp$datapath) == "txt") df <- fread(tmp$datapath, header=TRUE, sep = "\t")
+    tmp <- input$file$datapath
+    if(is.null(input$file) && input$goButton == 0) return(NULL)
+    if(is.null(input$file) && input$goButton > 0 )  tmp = "data/example.xlsx"
+      if(tools::file_ext(tmp) == "xlsx") df <- read.xls(tmp, header=TRUE)
+      if(tools::file_ext(tmp) == "csv") df <- fread(tmp, header=TRUE, sep = ",")
+      if(tools::file_ext(tmp) == "txt") df <- fread(tmp, header=TRUE, sep = "\t")
       return(df)
-    }
-  }})
+  })
 
   inFile2 <- reactive({
     tmp <- inFile()
