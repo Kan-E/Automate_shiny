@@ -5,10 +5,10 @@ account: kan-e
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 6208750
-bundleId: 5864557
+bundleId: 5885150
 url: https://kan-e.shinyapps.io/Automate_shiny/
-when: 1651586147.80733
-lastSyncTime: 1651586147.80735
+when: 1652069927.85341
+lastSyncTime: 1652069927.85343
 asMultiple: FALSE
 asStatic: FALSE
 ignoredFiles: LICENSE|README.md

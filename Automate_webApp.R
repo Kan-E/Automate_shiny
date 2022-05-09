@@ -7,6 +7,7 @@ library(multcomp)
 library(tidyverse)
 library(tools)
 library(ggpubr)
+library(shinyBS,verbose=FALSE)
 
 # User interface ----
 ui <- fluidPage(
@@ -36,15 +37,26 @@ ui <- fluidPage(
         type = "tabs",
         tabPanel("Data", dataTableOutput("outFile")),
         tabPanel(
-          "Plot", plotOutput("Plot"), #Plotの表示
+          "Plot", 
+          div(
+          plotOutput("Plot", height = "100%"), #Plotの表示
+          style = "height: calc(100vh  - 100px)"),
           fluidRow(
             column(4, htmlOutput("PlotType")),
             column(4, htmlOutput("Test")),
             column(4, downloadButton("download_data", "Download"))
+          ),
+          bsCollapse(id="input_collapse_panel",open="Tukey_panel",multiple = FALSE,
+                     bsCollapsePanel(title="Tukey-HSD or Welch_t-test:",
+                                     value="Tukey_panel",
+                                     dataTableOutput('outStat1')
+                     ),
+                     bsCollapsePanel(title="Dunnett:",
+                                     value="Dunnett_panel",
+                                     dataTableOutput('outStat2')
+                     )
           )
         ),
-        tabPanel("Tukey-HSD or Welch_t-test", dataTableOutput("outStat1")),
-        tabPanel("Dunnett", dataTableOutput("outStat2")),
         tabPanel("About",
                  strong("Automate_shiny"), br(),
                  "`Automate_shiny` is an RShiny web apps", a("(https://kan-e.shinyapps.io/Automate_shiny/)", href = "https://kan-e.shinyapps.io/Automate_shiny/"), "for automated data visualization from count matrix files.", br(),
@@ -86,15 +98,15 @@ ui <- fluidPage(
 )
 
 # Server logic
-server <- function(input, output) {
+server <- function(input, output, session) {
 
   inFile <- reactive({
     tmp <- input$file$datapath
     if(is.null(input$file) && input$goButton == 0) return(NULL)
     if(is.null(input$file) && input$goButton > 0 )  tmp = "data/example.xlsx"
       if(tools::file_ext(tmp) == "xlsx") df <- read.xls(tmp, header=TRUE)
-      if(tools::file_ext(tmp) == "csv") df <- fread(tmp, header=TRUE, sep = ",")
-      if(tools::file_ext(tmp) == "txt") df <- fread(tmp, header=TRUE, sep = "\t")
+      if(tools::file_ext(tmp) == "csv") df <- read.csv(tmp, header=TRUE, sep = ",")
+      if(tools::file_ext(tmp) == "txt") df <- read.table(tmp, header=TRUE, sep = "\t")
       return(df)
   })
 
@@ -236,41 +248,47 @@ server <- function(input, output) {
   })
 
   output$Plot <- renderPlot({
-    if (input$PlotType == "Boxplot"){
-    p <- ggboxplot(inFile2(), x = "sample", y = "value",fill = "sample",
-                   scales = "free", add = "jitter",
-                   add.params = list(size=0.5),
-                   xlab = FALSE, legend = "none", ylim = c(0, NA))
+    if(is.null(inFile())){
+      return(NULL)
+    }else{
+    withProgress(message = "Drawing a plot, please wait", {
+      if (input$PlotType == "Boxplot"){
+        p <- ggboxplot(inFile2(), x = "sample", y = "value",fill = "sample",
+                       scales = "free", add = "jitter",
+                       add.params = list(size=0.5),
+                       xlab = FALSE, legend = "none", ylim = c(0, NA))
+      }
+      if (input$PlotType == "Barplot"){
+        p <- ggbarplot(inFile2(),x = "sample", y = "value", scales = "free",
+                       facet.by = "Row.names", fill = "sample",add = c("mean_se", "jitter"),
+                       add.params = list(size=0.5), xlab = FALSE, legend = "none")
+      }
+      if (input$PlotType == "Errorplot"){
+        p <- ggerrorplot(inFile2(),x = "sample", y = "value",
+                         scales = "free", add = "jitter", facet.by = "Row.names",
+                         add.params = list(size=0.5), xlab = FALSE, error.plot = "errorbar")
+      }
+      if (input$PlotType == "Violinplot"){
+        p <- ggviolin(inFile2(),x = "sample", y = "value",
+                      facet.by = "Row.names", fill = "sample",add = c("jitter"),
+                      add.params = list(size=0.5), xlab = FALSE, legend = "none")
+      }
+      if (input$Test == "TukeyHSD or Welch_t-test") p <- p + stat_pvalue_manual(stat1(),hide.ns = T, size = 2)
+      if (input$Test == "Dunnett") p <- p + stat_pvalue_manual(stat2(),hide.ns = T, size = 2)
+      p <- (facet(p, facet.by = "Row.names",
+                  panel.labs.background = list(fill = "transparent", color = "transparent"),
+                  scales = "free", short.panel.labs = T)+
+              theme(aspect.ratio=1, axis.text.x= element_text(size = 5),
+                    axis.text.y= element_text(size = 7),
+                    panel.background = element_rect(fill = "transparent", size = 0.5),
+                    title = element_text(size = 7),text = element_text(size = 10)))
+      print(p)
+    })
     }
-    if (input$PlotType == "Barplot"){
-    p <- ggbarplot(inFile2(),x = "sample", y = "value", scales = "free",
-                   facet.by = "Row.names", fill = "sample",add = c("mean_se", "jitter"),
-                   add.params = list(size=0.5), xlab = FALSE, legend = "none")
-    }
-    if (input$PlotType == "Errorplot"){
-    p <- ggerrorplot(inFile2(),x = "sample", y = "value",
-                     scales = "free", add = "jitter", facet.by = "Row.names",
-                     add.params = list(size=0.5), xlab = FALSE, error.plot = "errorbar")
-    }
-    if (input$PlotType == "Violinplot"){
-    p <- ggviolin(inFile2(),x = "sample", y = "value",
-                     facet.by = "Row.names", fill = "sample",add = c("mean_se", "jitter"),
-                     add.params = list(size=0.5), xlab = FALSE, legend = "none")
-    }
-    if (input$Test == "TukeyHSD or Welch_t-test") p <- p + stat_pvalue_manual(stat1(),hide.ns = T, size = 2)
-    if (input$Test == "Dunnett") p <- p + stat_pvalue_manual(stat2(),hide.ns = T, size = 2)
-    p <- (facet(p, facet.by = "Row.names",
-                panel.labs.background = list(fill = "transparent", color = "transparent"),
-                scales = "free", short.panel.labs = T)+
-            theme(axis.text.x= element_text(size = 5),
-                  axis.text.y= element_text(size = 7),
-                  panel.background = element_rect(fill = "transparent", size = 0.5),
-                  title = element_text(size = 7),text = element_text(size = 10)))
-    print(p)
      })
 
   output$download_data = downloadHandler(
-    filename = function() {paste0(input$file, ".pdf")},
+    filename = function() {paste0(gsub("\\..+$", "", input$file), ".pdf")},
     content = function(file){
       tmp <- inFile()
       collist <- gsub("\\_.+$", "", colnames(tmp))
@@ -357,8 +375,14 @@ server <- function(input, output) {
       dev.off()
     }
   )
-
-
+  observeEvent(input$Test, ({
+    if(input$Test == "TukeyHSD or Welch_t-test"){
+      updateCollapse(session,id =  "input_collapse_panel", open="Tukey_panel")
+    }
+    if(input$Test == "Dunnett"){
+      updateCollapse(session,id =  "input_collapse_panel", open="Dunnett_panel")
+    }
+  }))
 }
 
 # Run the app
