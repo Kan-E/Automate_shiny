@@ -5,6 +5,23 @@ It has simplified functions for the creation of a basic graph. <br>
 The condition number is automatically recognized from the count matrix file and then the statical analysis is performed. <br>
 In the case of just 2 conditions (pairwise comparison), Welch's t-test is performed. In the case of more than 3 conditions (multiple comparisons), the Tukey HSD test and Dunnett's test are performed.<br>
 
+# Local installation
+To run this app locally on your machine, R environment setup is required.
+- Download R and RStudio (In the case of macOS, additionally install XQuartz and Xcode)
+- Run the following commands once
+```
+pkgs <- c("shiny","DT","gdata","rstatix","multcomp","tidyverse","ggpubr","shinyBS","devtools")
+
+for(pkg in pkgs) if (!require(pkg, character.only = T)){
+    install.packages(pkg, update = F)
+}
+```
+
+You may now run Automate_shiny with just one command in R:
+```
+shiny::runGitHub("Automate_shiny", "Kan-E")
+```
+
 # Input file format
 Input file format must be excel file format (.xlsx), tab-separated text file format (.txt), or CSV file format (.csv). <br>
 A1 cell in the excel sheet must be __Row.names__. <br>
