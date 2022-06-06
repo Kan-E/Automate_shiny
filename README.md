@@ -10,7 +10,7 @@ To run this app locally on your machine, R environment setup is required.
 - Download R and RStudio (In the case of macOS, additionally install XQuartz and Xcode)
 - Run the following commands once
 ```
-pkgs <- c("shiny","DT","gdata","rstatix","multcomp","tidyverse","ggpubr","shinyBS","devtools")
+pkgs <- c("shiny","DT","gdata","rstatix","multcomp","tidyverse","ggpubr","shinyBS")
 
 for(pkg in pkgs) if (!require(pkg, character.only = T)){
     install.packages(pkg, update = F)
