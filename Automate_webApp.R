@@ -5,7 +5,6 @@ library(gdata)
 library(rstatix)
 library(multcomp)
 library(tidyverse)
-library(tools)
 library(ggpubr)
 library(shinyBS,verbose=FALSE)
 
@@ -38,21 +37,27 @@ ui <- fluidPage(
         tabPanel("Data", dataTableOutput("outFile")),
         tabPanel(
           "Plot", 
-          div(
-          plotOutput("Plot", height = "100%"), #Plotの表示
-          style = "height: calc(100vh  - 100px)"),
           fluidRow(
             column(4, htmlOutput("PlotType")),
             column(4, htmlOutput("Test")),
             column(4, downloadButton("download_data", "Download"))
           ),
+          div(
+          plotOutput("Plot", height = "100%"), #Plotの表示
+          style = "height: calc(100vh  - 100px)"),
           bsCollapse(id="input_collapse_panel",open="Tukey_panel",multiple = FALSE,
                      bsCollapsePanel(title="Tukey-HSD or Welch_t-test:",
                                      value="Tukey_panel",
+                                     fluidRow(
+                                       column(4, downloadButton("download_Stat1", "Download"))
+                                     ),
                                      dataTableOutput('outStat1')
                      ),
                      bsCollapsePanel(title="Dunnett:",
                                      value="Dunnett_panel",
+                                     fluidRow(
+                                       column(4, downloadButton("download_Stat2", "Download"))
+                                     ),
                                      dataTableOutput('outStat2')
                      )
           )
@@ -89,7 +94,7 @@ ui <- fluidPage(
                  "Source code:", a("https://github.com/Kan-E/Automate_shiny", href = "https://github.com/Kan-E/Automate_shiny"), br(),
                  "2022 April"),
         footer=p(hr(),p("ShinyApp created by Kan Etoh",align="center",width=4),
-                 p(("Copyright (C) 2022, code licensed under MIT"),align="center",width=4),
+                 p(("Copyright (C) 2022, code licensed under GPLv3"),align="center",width=4),
                  p(("Code available on Github:"),a("https://github.com/Kan-E/Automate_shiny",href="https://github.com/Kan-E/Automate_shiny"),align="center",width=4)
         )
       )
@@ -227,17 +232,14 @@ server <- function(input, output, session) {
 
   output$outFile <- DT::renderDataTable({
     inFile()
-  }, extensions = c('Buttons'), options = list(dom = 'Blfrtip', buttons = c('csv', 'excel', 'pdf'))
-  )
+  })
 
   output$outStat1 <- DT::renderDataTable({
     stat1()
-  }, extensions = c('Buttons'), options = list(dom = 'Blfrtip', buttons = c('csv', 'excel', 'pdf'))
-  )
+  })
   output$outStat2 <- DT::renderDataTable({
     stat2()
-  }, extensions = c('Buttons'), options = list(dom = 'Blfrtip', buttons = c('csv', 'excel', 'pdf'))
-  )
+  })
 
   #以下Plotplotの描画部分
   output$Test <- renderUI({
@@ -248,7 +250,7 @@ server <- function(input, output, session) {
   })
 
   output$Plot <- renderPlot({
-    if(is.null(inFile())){
+    if(is.null(inFile2()) || is.null(input$PlotType) || is.null(input$Test)){
       return(NULL)
     }else{
     withProgress(message = "Drawing a plot, please wait", {
@@ -286,9 +288,20 @@ server <- function(input, output, session) {
     })
     }
      })
+  
+  output$download_Stat1 <- downloadHandler(
+    filename = function() {paste0(gsub("\\..+$", "", input$file), ".txt")},
+    content = function(file){
+      df <- apply(as.data.frame(stat1()),2,as.character)
+      write.table(df, file, row.names = F, sep = "\t", quote = F)})
+  output$download_Stat2 <- downloadHandler(
+    filename = function() {paste0(gsub("\\..+$", "", input$file), ".txt")},
+    content = function(file){
+      df <- apply(as.data.frame(stat2()),2,as.character)
+      write.table(df, file, row.names = F, sep = "\t", quote = F)})
 
   output$download_data = downloadHandler(
-    filename = function() {paste0(gsub("\\..+$", "", input$file), ".pdf")},
+    filename = function() {paste0(gsub("\\..+$", "", input$file), ".txt")},
     content = function(file){
       tmp <- inFile()
       collist <- gsub("\\_.+$", "", colnames(tmp))
