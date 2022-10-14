@@ -5,10 +5,10 @@ account: kan-e
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 7305497
-bundleId: 6402001
+bundleId: 6402031
 url: https://kan-e.shinyapps.io/Automate_shiny/
-when: 1665724411.21956
-lastSyncTime: 1665724411.21957
+when: 1665725757.73217
+lastSyncTime: 1665725757.73219
 asMultiple: FALSE
 asStatic: FALSE
 ignoredFiles: .automate.mov.icloud|LICENSE.md|README.md
