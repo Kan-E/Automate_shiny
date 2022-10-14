@@ -9,16 +9,56 @@ library(ggpubr)
 library(shinyBS,verbose=FALSE)
 
 # User interface ----
+popoverTempate <- 
+  '<div class="popover popover-lg" role="tooltip"><div class="arrow"></div><h3 class="popover-title"></h3><div class="popover-content"></div></div>'
+pdfSize_for_GOI <- paste(strong("Boxplot:"),"<br>",
+                         "Gene number = 1,","height = 3, width = 3 <br>",
+                         "Gene number = 2,","height = 3, width = 6 <br>",
+                         "Gene number = 3,","height = 3, width = 9 <br>",
+                         "Gene number = 4,","height = 6, width = 6 <br>",
+                         "Gene number = 5 ~ 6,","height = 6, width = 9 <br>",
+                         "Gene number = 7 ~ 9,","height = 7.5, width = 6.75 <br>",
+                         "Gene number = 10 ~ 12,","height = 7.5, width = 9 <br>",
+                         "Gene number = 13 ~ 16,","height = 9, width = 9 <br>",
+                         "Gene number = 17 ~ 25,","height = 11.5, width = 11.5 <br>",
+                         "Gene number = 26 ~ 36,","height = 13.5, width = 13.5 <br>",
+                         "Gene number = 37 ~ 49,","height = 15.75, width = 15.75 <br>",
+                         "Gene number = 50 ~ 64,","height = 18, width = 18 <br>",
+                         "Gene number = 65 ~ 81,","height = 20.5, width = 20.5 <br>",
+                         "Gene number = 82 ~ 200,","height = 22.5, width = 22.5 <br>",
+                         "Gene number > 200,", "height = 30, width = 30 <br>")
+
 ui <- fluidPage(
+  tags$style(".popover{
+            max-width: 1000px;
+          }"),
   tags$head(includeHTML(("google-analytics.html"))),
   titlePanel("Automate"),
   sidebarLayout(
     sidebarPanel(
       fileInput("file",
-        label = "Select a count matrix file (txt, csv, or xlsx) for input",
+        strong(
+          span("Select a count matrix file"),
+          span(icon("info-circle"), id = "icon1", 
+               options = list(template = popoverTempate))
+        ),
         accept = c("xlsx", "txt", "csv"),
         multiple = FALSE,
         width = "80%"),
+      bsPopover("icon1", "Count matrix format (txt, csv, or xlsx):", 
+                content=paste(strong("The replication number"), "is represented by", strong("the underline"),".<br>", strong("Do not use it for anything else"),".<br><br>",
+                              img(src="format example.png", width = 1000,height = 400)), 
+                placement = "right",options = list(container = "body")),
+      strong(span("Output plot size setting for pdf (0: default)"),
+             span(icon("info-circle"), id = "pair_pdf_icon", 
+                  options = list(template = popoverTempate))),
+      fluidRow(
+        column(5, numericInput("pair_pdf_height", "pdf_height", value = 0, min = 0)),
+        column(5, numericInput("pair_pdf_width", "pdf_width", value = 0, min = 0))
+      ),
+      bsPopover("pair_pdf_icon", "Output plot size setting for pdf (default: 0): ", 
+                content=paste("You can adjust the plot size by using", strong('pdf_height'), "and", strong('pdf_width'), "parameters.<br>", 
+                              "Default size: <br>", pdfSize_for_GOI),trigger = "click",placement = "right",options = list(container = "body")), 
       actionButton("goButton", "example data"),
       tags$head(tags$style("#goButton{color: black;
                                  font-size: 12px;
@@ -248,45 +288,50 @@ server <- function(input, output, session) {
   output$PlotType <- renderUI({
     selectInput('PlotType', 'PlotType', c("Boxplot", "Barplot", "Errorplot", "Violinplot"))
   })
-
-  output$Plot <- renderPlot({
+  
+  plot_result <- reactive({
     if(is.null(inFile2()) || is.null(input$PlotType) || is.null(input$Test)){
       return(NULL)
     }else{
-    withProgress(message = "Drawing a plot, please wait", {
-      if (input$PlotType == "Boxplot"){
-        p <- ggboxplot(inFile2(), x = "sample", y = "value",fill = "sample",
-                       scales = "free", add = "jitter",
-                       add.params = list(size=0.5),
-                       xlab = FALSE, legend = "none", ylim = c(0, NA))
-      }
-      if (input$PlotType == "Barplot"){
-        p <- ggbarplot(inFile2(),x = "sample", y = "value", scales = "free",
-                       facet.by = "Row.names", fill = "sample",add = c("mean_se", "jitter"),
-                       add.params = list(size=0.5), xlab = FALSE, legend = "none")
-      }
-      if (input$PlotType == "Errorplot"){
-        p <- ggerrorplot(inFile2(),x = "sample", y = "value",
-                         scales = "free", add = "jitter", facet.by = "Row.names",
-                         add.params = list(size=0.5), xlab = FALSE, error.plot = "errorbar")
-      }
-      if (input$PlotType == "Violinplot"){
-        p <- ggviolin(inFile2(),x = "sample", y = "value",
-                      facet.by = "Row.names", fill = "sample",add = c("jitter"),
-                      add.params = list(size=0.5), xlab = FALSE, legend = "none")
-      }
-      if (input$Test == "TukeyHSD or Welch_t-test") p <- p + stat_pvalue_manual(stat1(),hide.ns = T, size = 2)
-      if (input$Test == "Dunnett") p <- p + stat_pvalue_manual(stat2(),hide.ns = T, size = 2)
-      p <- (facet(p, facet.by = "Row.names",
-                  panel.labs.background = list(fill = "transparent", color = "transparent"),
-                  scales = "free", short.panel.labs = T)+
-              theme(aspect.ratio=1, axis.text.x= element_text(size = 5),
-                    axis.text.y= element_text(size = 7),
-                    panel.background = element_rect(fill = "transparent", size = 0.5),
-                    title = element_text(size = 7),text = element_text(size = 10)))
-      print(p)
-    })
+      withProgress(message = "Drawing a plot, please wait", {
+        if (input$PlotType == "Boxplot"){
+          p <- ggboxplot(inFile2(), x = "sample", y = "value",fill = "sample",
+                         scales = "free", add = "jitter",
+                         add.params = list(size=0.5),
+                         xlab = FALSE, ylim = c(0, NA))
+        }
+        if (input$PlotType == "Barplot"){
+          p <- ggbarplot(inFile2(),x = "sample", y = "value", scales = "free",
+                         facet.by = "Row.names", fill = "sample",add = c("mean_se", "jitter"),
+                         add.params = list(size=0.5), xlab = FALSE)
+        }
+        if (input$PlotType == "Errorplot"){
+          p <- ggerrorplot(inFile2(),x = "sample", y = "value",
+                           scales = "free", add = "jitter", facet.by = "Row.names",
+                           add.params = list(size=0.5), xlab = FALSE, error.plot = "errorbar")
+        }
+        if (input$PlotType == "Violinplot"){
+          p <- ggviolin(inFile2(),x = "sample", y = "value",
+                        facet.by = "Row.names", fill = "sample",add = c("jitter"),
+                        add.params = list(size=0.5), xlab = FALSE)
+        }
+        if (input$Test == "TukeyHSD or Welch_t-test") p <- p + stat_pvalue_manual(stat1(),hide.ns = T, size = 5)
+        if (input$Test == "Dunnett") p <- p + stat_pvalue_manual(stat2(),hide.ns = T, size = 5)
+        p <- (facet(p, facet.by = "Row.names",
+                    panel.labs.background = list(fill = "transparent", color = "transparent"),
+                    scales = "free", short.panel.labs = T, panel.labs.font = list(size=15))+
+                theme(axis.text.x = element_blank(),
+                      panel.background = element_rect(fill = "transparent", size = 0.5),
+                      title = element_text(size = 10),text = element_text(size = 12),
+                      axis.title.y = element_text(size=15),legend.text = element_text(size=15),
+                      legend.title = element_blank()))
+        return(p)
+      })
     }
+  })
+
+  output$Plot <- renderPlot({
+    plot_result()
      })
   
   output$download_Stat1 <- downloadHandler(
@@ -301,93 +346,28 @@ server <- function(input, output, session) {
       write.table(df, file, row.names = F, sep = "\t", quote = F)})
 
   output$download_data = downloadHandler(
-    filename = function() {paste0(gsub("\\..+$", "", input$file), ".txt")},
-    content = function(file){
-      tmp <- inFile()
-      collist <- gsub("\\_.+$", "", colnames(tmp))
-      collist <- unique(collist[-1])
-      rowlist <- gsub("\\_.+$", "", tmp[,1])
-      rowlist <- unique(rowlist)
-      if ((length(rowlist) > 81) && (length(rowlist) <= 200))
-      {pdf_hsize <- 15
-      pdf_wsize <- 15}
-      if ((length(rowlist) > 64) && (length(rowlist) <= 81))
-      {pdf_hsize <- 13.5
-      pdf_wsize <- 13.5}
-      if ((length(rowlist) > 49) && (length(rowlist) <= 64))
-      {pdf_hsize <- 12
-      pdf_wsize <- 12}
-      if ((length(rowlist) > 36) && (length(rowlist) <= 49))
-      {pdf_hsize <- 10.5
-      pdf_wsize <- 10.5}
-      if ((length(rowlist) > 25) && (length(rowlist) <= 36))
-      {pdf_hsize <- 9
-      pdf_wsize <- 9}
-      if ((length(rowlist) > 16) && (length(rowlist) <= 25))
-      {pdf_hsize <- 7.5
-      pdf_wsize <- 7.5}
-      if ((length(rowlist) > 12) && (length(rowlist) <= 16))
-      {pdf_hsize <- 6
-      pdf_wsize <- 6}
-      if ((length(rowlist) > 9) && (length(rowlist) <= 12))
-      {pdf_hsize <- 5
-      pdf_wsize <- 6}
-      if ((length(rowlist) > 6) && (length(rowlist) <= 9))
-      {pdf_hsize <- 5
-      pdf_wsize <- 4.5}
-      if ((length(rowlist) > 4) && (length(rowlist) <= 6))
-      {pdf_hsize <- 4
-      pdf_wsize <- 6}
-      if (length(rowlist) == 4)
-      {pdf_hsize <- 4
-      pdf_wsize <- 4}
-      if (length(rowlist) == 3)
-      {pdf_hsize <- 2
-      pdf_wsize <- 6}
-      if (length(rowlist) == 2)
-      {pdf_hsize <- 2
-      pdf_wsize <- 4}
-      if (length(rowlist) == 1)
-      {pdf_hsize <- 2
-      pdf_wsize <- 2}
-      if (length(rowlist) > 200)
-      {pdf_hsize <- 30
-      pdf_wsize <- 30}
-      pdf(file, width = pdf_wsize, height = pdf_hsize)
-      if (input$PlotType == "Boxplot"){
-        p <- ggboxplot(inFile2(), x = "sample", y = "value",fill = "sample",
-                       scales = "free", add = "jitter",
-                       add.params = list(size=0.5),
-                       xlab = FALSE, legend = "none", ylim = c(0, NA))
-      }
-      if (input$PlotType == "Barplot"){
-        p <- ggbarplot(inFile2(),x = "sample", y = "value", scales = "free",
-                       facet.by = "Row.names", fill = "sample",add = c("mean_se", "jitter"),
-                       add.params = list(size=0.5), xlab = FALSE, legend = "none")
-      }
-      if (input$PlotType == "Errorplot"){
-        p <- ggerrorplot(inFile2(),x = "sample", y = "value",
-                         scales = "free", add = "jitter", facet.by = "Row.names",
-                         add.params = list(size=0.5), xlab = FALSE, error.plot = "errorbar")
-      }
-      if (input$PlotType == "Violinplot"){
-        p <- ggviolin(inFile2(),x = "sample", y = "value",
-                      facet.by = "Row.names", fill = "sample",add = c("mean_se", "jitter"),
-                      add.params = list(size=0.5), xlab = FALSE, legend = "none")
-      }
-      if (input$Test == "TukeyHSD or Welch_t-test") p <- p + stat_pvalue_manual(stat1(),hide.ns = T, size = 2)
-      if (input$Test == "Dunnett") p <- p + stat_pvalue_manual(stat2(),hide.ns = T, size = 2)
-      p <- (facet(p, facet.by = "Row.names",
-                  panel.labs.background = list(fill = "transparent", color = "transparent"),
-                  scales = "free", short.panel.labs = T)+
-              theme(axis.text.x= element_text(size = 5),
-                    axis.text.y= element_text(size = 7),
-                    panel.background = element_rect(fill = "transparent", size = 0.5),
-                    title = element_text(size = 7),text = element_text(size = 10)))
-      print(p)
-      dev.off()
+    filename = function(){
+      paste0(gsub("\\..+$", "", input$file), ".pdf")
+    },
+    content = function(file) {
+      withProgress(message = "Preparing download",{
+        tmp <- inFile()
+        rowlist <- rownames(tmp)
+        if(input$pair_pdf_height == 0){
+          pdf_height <- pdf_h(rowlist)
+        }else pdf_height <- input$pair_pdf_height
+        if(input$pair_pdf_width == 0){
+          pdf_width <- pdf_w(rowlist)
+        }else pdf_width <- input$pair_pdf_width
+        pdf(file, height = pdf_height, width = pdf_width)
+        print(plot_result())
+        dev.off()
+        incProgress(1)
+      })
     }
   )
+  
+  
   observeEvent(input$Test, ({
     if(input$Test == "TukeyHSD or Welch_t-test"){
       updateCollapse(session,id =  "input_collapse_panel", open="Tukey_panel")
@@ -396,6 +376,43 @@ server <- function(input, output, session) {
       updateCollapse(session,id =  "input_collapse_panel", open="Dunnett_panel")
     }
   }))
+}
+
+pdf_h <- function(rowlist){
+  if ((length(rowlist) > 81) && (length(rowlist) <= 200)) pdf_hsize <- 22.5
+  if ((length(rowlist) > 64) && (length(rowlist) <= 81)) pdf_hsize <- 20.25
+  if ((length(rowlist) > 49) && (length(rowlist) <= 64)) pdf_hsize <- 18
+  if ((length(rowlist) > 36) && (length(rowlist) <= 49)) pdf_hsize <- 15.75
+  if ((length(rowlist) > 25) && (length(rowlist) <= 36)) pdf_hsize <- 13.5
+  if ((length(rowlist) > 16) && (length(rowlist) <= 25)) pdf_hsize <- 11.5
+  if ((length(rowlist) > 12) && (length(rowlist) <= 16)) pdf_hsize <- 9
+  if ((length(rowlist) > 9) && (length(rowlist) <= 12)) pdf_hsize <- 7.5
+  if ((length(rowlist) > 6) && (length(rowlist) <= 9)) pdf_hsize <- 7.5
+  if ((length(rowlist) > 4) && (length(rowlist) <= 6)) pdf_hsize <- 6
+  if (length(rowlist) == 4) pdf_hsize <- 6
+  if (length(rowlist) == 3) pdf_hsize <- 3
+  if (length(rowlist) == 2) pdf_hsize <- 3
+  if (length(rowlist) == 1) pdf_hsize <- 3
+  if (length(rowlist) > 200) pdf_hsize <- 30
+  return(pdf_hsize)
+}
+pdf_w <- function(rowlist){
+  if ((length(rowlist) > 81) && (length(rowlist) <= 200)) pdf_wsize <- 22.5
+  if ((length(rowlist) > 64) && (length(rowlist) <= 81)) pdf_wsize <- 20.25
+  if ((length(rowlist) > 49) && (length(rowlist) <= 64)) pdf_wsize <- 18
+  if ((length(rowlist) > 36) && (length(rowlist) <= 49)) pdf_wsize <- 15.75
+  if ((length(rowlist) > 25) && (length(rowlist) <= 36)) pdf_wsize <- 13.5
+  if ((length(rowlist) > 16) && (length(rowlist) <= 25)) pdf_wsize <- 11.5
+  if ((length(rowlist) > 12) && (length(rowlist) <= 16)) pdf_wsize <- 9
+  if ((length(rowlist) > 9) && (length(rowlist) <= 12)) pdf_wsize <- 9
+  if ((length(rowlist) > 6) && (length(rowlist) <= 9)) pdf_wsize <- 6.75
+  if ((length(rowlist) > 4) && (length(rowlist) <= 6)) pdf_wsize <- 9
+  if (length(rowlist) == 4) pdf_wsize <- 6
+  if (length(rowlist) == 3) pdf_wsize <- 9
+  if (length(rowlist) == 2) pdf_wsize <- 6
+  if (length(rowlist) == 1) pdf_wsize <- 3
+  if (length(rowlist) > 200) pdf_wsize <- 30
+  return(pdf_wsize)
 }
 
 # Run the app
