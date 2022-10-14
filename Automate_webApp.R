@@ -160,10 +160,8 @@ server <- function(input, output, session) {
     if (is.null(tmp)){
       return(NULL)
     } else {
-      collist <- gsub("\\_.+$", "", colnames(tmp))
-      collist <- unique(collist[-1])
-      rowlist <- gsub("\\_.+$", "", tmp[,1])
-      rowlist <- unique(rowlist)
+      collist <- collist()
+      rowlist <- rowlist()
       tmp <- tmp %>% tidyr::gather(key=sample, value=value,-Row.names)
       tmp$sample<-gsub("\\_.+$", "", tmp$sample)
       tmp$Row.names <- as.factor(tmp$Row.names)
@@ -174,23 +172,36 @@ server <- function(input, output, session) {
     }
   })
 
-
-
-  stat1 <- reactive({
+  collist <- reactive({
     tmp <- inFile()
     if (is.null(tmp)) {
       return(NULL)
     } else {
       collist <- gsub("\\_.+$", "", colnames(tmp))
       collist <- unique(collist[-1])
+      return(collist)
+    }
+    })
+  
+  rowlist <- reactive({
+    tmp <- inFile()
+    if (is.null(tmp)) {
+      return(NULL)
+    } else {
       rowlist <- gsub("\\_.+$", "", tmp[,1])
       rowlist <- unique(rowlist)
-      tmp <- tmp %>% tidyr::gather(key=sample, value=value,-Row.names)
-      tmp$sample<-gsub("\\_.+$", "", tmp$sample)
-      tmp$Row.names <- as.factor(tmp$Row.names)
-      tmp$sample <- as.factor(tmp$sample)
-      tmp$value <- as.numeric(tmp$value)
-      tmp$sample <- factor(tmp$sample,levels=collist,ordered=TRUE)
+      return(rowlist)
+    }
+  })
+
+
+  stat1 <- reactive({
+    tmp <- inFile2()
+    if (is.null(tmp)) {
+      return(NULL)
+    } else {
+      collist <- collist()
+      rowlist <- rowlist()
       res <- data.frame(matrix(rep(NA, 11), nrow=1))[numeric(0), ]
       colnames(res) <- c("Row.names", "group1", "group2", "term", "null.value","Std.Error","coefficients","t.value","p.adj","xmin", "xmax")
       if (length(collist) >= 3){
@@ -208,20 +219,12 @@ server <- function(input, output, session) {
     }
   })
   stat2 <- reactive({
-    tmp <- inFile()
+    tmp <- inFile2()
     if (is.null(tmp)) {
       return(NULL)
     } else {
-      collist <- gsub("\\_.+$", "", colnames(tmp))
-      collist <- unique(collist[-1])
-      rowlist <- gsub("\\_.+$", "", tmp[,1])
-      rowlist <- unique(rowlist)
-      tmp <- tmp %>% tidyr::gather(key=sample, value=value,-Row.names)
-      tmp$sample<-gsub("\\_.+$", "", tmp$sample)
-      tmp$Row.names <- as.factor(tmp$Row.names)
-      tmp$sample <- as.factor(tmp$sample)
-      tmp$value <- as.numeric(tmp$value)
-      tmp$sample <- factor(tmp$sample,levels=collist,ordered=TRUE)
+      collist <- collist()
+      rowlist <- rowlist()
       res <- data.frame(matrix(rep(NA, 11), nrow=1))[numeric(0), ]
       colnames(res) <- c("Row.names", "group1", "group2", "term", "null.value","Std.Error","coefficients","t.value","p.adj","xmin", "xmax")
       if (length(collist) >= 3){
