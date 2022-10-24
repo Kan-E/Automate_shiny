@@ -6,6 +6,19 @@ The condition number is automatically recognized from the count matrix file and 
 In the case of just 2 conditions (pairwise comparison), Welch's t-test is performed. In the case of more than 3 conditions (multiple comparisons), the Tukey HSD test and Dunnett's test are performed.<br>
 
 # Local installation
+## Method 1 (Docker is required)
+- Download Docker
+- Run the following commands once to get the docker image of RNAseqChef<br>
+```
+docker pull kanetoh1030/shiny-automate
+```
+You may now run Automate with just one command in the command line:
+```
+docker run --rm -p 3838:3838 kanetoh1030/shiny-automate:latest
+```
+Please access http://localhost:3838 in your browser.
+
+## Method 2 (R environment setup is required)
 To run this app locally on your machine, R environment setup is required.
 - Download R and RStudio (In the case of macOS, additionally install XQuartz and Xcode)
 - Run the following commands once
